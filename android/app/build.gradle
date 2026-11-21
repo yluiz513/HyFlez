@@ -1,0 +1,16 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.hyflez.overlay'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.hyflez.overlay'
+        minSdk 23
+        targetSdk 32
+        versionCode 1
+        versionName '0.1.0'
+    }
+}
