@@ -10,6 +10,9 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
@@ -114,7 +117,8 @@ public class MainActivity extends Activity {
 
         String[][] tabs = {
             {"HOME", "⌂  Home"}, {"MODS", "◇  Mods"}, {"SKINS", "♙  Skins"},
-            {"TEXTURES", "▧  Texturas"}, {"WORLDS", "▦  Worlds"}, {"TOOLS", "⚙  Tools"}
+            {"TEXTURES", "▧  Texturas"}, {"WORLDS", "▦  Worlds"}, {"TOOLS", "⚙  Tools"},
+            {"COMBAT", "⚔  Combat"}
         };
         for (int i = 0; i < tabs.length; i += 2) {
             LinearLayout row = new LinearLayout(this);
@@ -194,6 +198,12 @@ public class MainActivity extends Activity {
                 addCard("OVERLAY HYFLEZ", "Ative a bolinha flutuante e o HUD visual do HyFlez. Esses recursos não modificam a memória do Minecraft.", "ATIVAR OVERLAY", () -> startOverlay());
                 addCard("STATUS", "Launcher Android inicial. Algumas áreas ainda serão desenvolvidas nas próximas versões.", null, null);
                 break;
+            case "COMBAT":
+                addCard("REACTION TRAINER", "Teste seus reflexos. Aguarde a tela ficar verde e toque o mais rápido possível.", "INICIAR TESTE", () -> startReactionTest());
+                addCard("CPS TEST", "Meça sua velocidade de cliques durante cinco segundos.", "TESTAR CPS", () -> startCpsTest());
+                addCard("AIM TRAINER", "Treino de precisão com alvos dentro do HyFlez. Não controla a mira do Minecraft.", "ABRIR TREINO", () -> showAimTrainer());
+                addCard("FAIR PLAY", "Os módulos de treino funcionam fora das partidas e não leem jogadores, entidades ou dados de servidores públicos.", null, null);
+                break;
             default:
                 addCard("BEM-VINDO AO HYFLEZ", "Seu ponto de partida para add-ons, skins, texturas e mundos do Minecraft Bedrock.", null, null);
                 addCard("ATALHO RÁPIDO", "Toque em PLAY para abrir o Minecraft instalado no aparelho.", "ABRIR MINECRAFT", () -> openMinecraft());
@@ -246,6 +256,130 @@ public class MainActivity extends Activity {
                 Toast.makeText(this, "O Minecraft não aceitou esse arquivo. Confira se é um .mcpack, .mcaddon ou .mcworld.", Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+
+    private void startReactionTest() {
+        final Handler handler = new Handler(Looper.getMainLooper());
+        final AlertDialog dialog = new AlertDialog.Builder(this).create();
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(20), dp(20), dp(20), dp(20));
+        box.setBackground(shape(PANEL, PURPLE, 18));
+        TextView status = text("Toque em INICIAR e espere a tela ficar verde.", 16, Color.WHITE, true);
+        status.setGravity(Gravity.CENTER);
+        box.addView(status, new LinearLayout.LayoutParams(-1, dp(90)));
+        Button action = button("INICIAR", PURPLE);
+        box.addView(action, new LinearLayout.LayoutParams(-1, dp(54)));
+        final boolean[] waiting = {false};
+        final boolean[] ready = {false};
+        final long[] greenAt = {0L};
+        final Runnable[] goGreen = new Runnable[1];
+        action.setOnClickListener(v -> {
+            if (ready[0]) {
+                long elapsed = SystemClock.elapsedRealtime() - greenAt[0];
+                ready[0] = false;
+                status.setText("Seu tempo: " + elapsed + " ms");
+                action.setText("TENTAR NOVAMENTE");
+                action.setBackground(shape(PURPLE, CYAN, 14));
+                return;
+            }
+            if (waiting[0]) {
+                handler.removeCallbacks(goGreen[0]);
+                waiting[0] = false;
+                status.setText("Você foi rápido demais! Tente novamente.");
+                action.setText("TENTAR NOVAMENTE");
+                return;
+            }
+            waiting[0] = true;
+            status.setText("Aguarde... não toque ainda!");
+            action.setText("AGUARDANDO");
+            action.setBackground(shape(Color.rgb(170, 45, 55), CYAN, 14));
+            int delay = 1500 + (int)(Math.random() * 2500);
+            goGreen[0] = () -> {
+                if (!dialog.isShowing() || !waiting[0]) return;
+                waiting[0] = false;
+                ready[0] = true;
+                greenAt[0] = SystemClock.elapsedRealtime();
+                status.setText("AGORA! TOQUE!");
+                action.setText("TOCAR!");
+                action.setBackground(shape(Color.rgb(30, 170, 90), CYAN, 14));
+            };
+            handler.postDelayed(goGreen[0], delay);
+        });
+        dialog.setView(box);
+        dialog.setOnDismissListener(d -> handler.removeCallbacksAndMessages(null));
+        dialog.show();
+    }
+
+    private void startCpsTest() {
+        final Handler handler = new Handler(Looper.getMainLooper());
+        final AlertDialog dialog = new AlertDialog.Builder(this).create();
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(18), dp(18), dp(18), dp(18));
+        box.setBackground(shape(PANEL, PURPLE, 18));
+        TextView status = text("Toque em COMEÇAR para iniciar a contagem de 5 segundos.", 15, Color.WHITE, true);
+        status.setGravity(Gravity.CENTER);
+        box.addView(status, new LinearLayout.LayoutParams(-1, dp(82)));
+        Button tap = button("COMEÇAR", PURPLE);
+        box.addView(tap, new LinearLayout.LayoutParams(-1, dp(64)));
+        final boolean[] running = {false};
+        final int[] clicks = {0};
+        final long[] endAt = {0L};
+        final Runnable[] ticker = new Runnable[1];
+        tap.setOnClickListener(v -> {
+            if (!running[0]) {
+                clicks[0] = 0;
+                running[0] = true;
+                endAt[0] = SystemClock.elapsedRealtime() + 5000L;
+                tap.setText("TOQUE!  •  0");
+                status.setText("5.0 segundos restantes");
+                ticker[0] = new Runnable() {
+                    @Override public void run() {
+                        if (!running[0] || !dialog.isShowing()) return;
+                        long left = endAt[0] - SystemClock.elapsedRealtime();
+                        if (left <= 0) {
+                            running[0] = false;
+                            double cps = clicks[0] / 5.0;
+                            status.setText("Resultado: " + clicks[0] + " cliques • " + String.format(java.util.Locale.US, "%.1f", cps) + " CPS");
+                            tap.setText("TENTAR NOVAMENTE");
+                            return;
+                        }
+                        status.setText(String.format(java.util.Locale.US, "%.1f segundos restantes", left / 1000.0));
+                        handler.postDelayed(this, 80);
+                    }
+                };
+                handler.post(ticker[0]);
+            } else {
+                clicks[0]++;
+                tap.setText("TOQUE!  •  " + clicks[0]);
+            }
+        });
+        dialog.setView(box);
+        dialog.setOnDismissListener(d -> handler.removeCallbacksAndMessages(null));
+        dialog.show();
+    }
+
+    private void showAimTrainer() {
+        final AlertDialog dialog = new AlertDialog.Builder(this).create();
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(18), dp(18), dp(18), dp(18));
+        box.setBackground(shape(PANEL, PURPLE, 18));
+        TextView score = text("ALVOS ACERTADOS: 0", 17, Color.WHITE, true);
+        score.setGravity(Gravity.CENTER);
+        box.addView(score, new LinearLayout.LayoutParams(-1, dp(60)));
+        Button target = button("●", PURPLE);
+        box.addView(target, new LinearLayout.LayoutParams(-1, dp(170)));
+        final int[] hits = {0};
+        target.setOnClickListener(v -> {
+            hits[0]++;
+            score.setText("ALVOS ACERTADOS: " + hits[0]);
+            target.setText(hits[0] % 2 == 0 ? "●" : "◎");
+        });
+        dialog.setView(box);
+        dialog.show();
     }
 
     private void startOverlay() {
