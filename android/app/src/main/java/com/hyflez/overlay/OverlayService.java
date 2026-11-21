@@ -16,14 +16,16 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class OverlayService extends Service {
     private WindowManager wm;
-    private View bubble;
-    private View panel;
-    private WindowManager.LayoutParams bubbleParams;
-    private WindowManager.LayoutParams panelParams;
+    private View bubble, panel, trainingHud;
+    private WindowManager.LayoutParams bubbleParams, panelParams, hudParams;
     private boolean panelOpen = false;
+    private boolean rgbEnabled = true;
+    private boolean compact = false;
+    private boolean trainingEnabled = false;
 
     private int dp(float v) {
         return (int)(v * getResources().getDisplayMetrics().density + 0.5f);
@@ -44,17 +46,15 @@ public class OverlayService extends Service {
         }
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
             ? new Notification.Builder(this, channelId) : new Notification.Builder(this);
-        Notification notification = builder.setContentTitle("HyFlez está ativo")
-            .setContentText("Toque na bolinha para abrir o painel.")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setOngoing(true).build();
-        startForeground(7, notification);
+        startForeground(7, builder.setContentTitle("HyFlez está ativo")
+            .setContentText("Toque na bolinha para abrir os controles.")
+            .setSmallIcon(android.R.drawable.ic_dialog_info).setOngoing(true).build());
     }
 
     private GradientDrawable shape(int color, int stroke) {
         GradientDrawable d = new GradientDrawable();
         d.setColor(color);
-        d.setCornerRadius(dp(24));
+        d.setCornerRadius(dp(20));
         d.setStroke(dp(2), stroke);
         return d;
     }
@@ -77,66 +77,91 @@ public class OverlayService extends Service {
     private void createBubble() {
         TextView b = text("H", 21);
         b.setTypeface(null, 1);
-        b.setBackground(shape(Color.rgb(35, 18, 58), Color.rgb(190, 80, 255)));
         bubble = b;
+        applyBubbleStyle();
         bubbleParams = new WindowManager.LayoutParams(dp(58), dp(58), windowType(),
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.TRANSLUCENT);
         bubbleParams.gravity = Gravity.TOP | Gravity.LEFT;
         bubbleParams.x = dp(12);
         bubbleParams.y = dp(220);
-        b.setOnClickListener(v -> togglePanel());
         b.setOnTouchListener(new View.OnTouchListener() {
             float downX, downY; int startX, startY; long downTime;
+            boolean moved;
             @Override public boolean onTouch(View v, MotionEvent e) {
                 if (e.getAction() == MotionEvent.ACTION_DOWN) {
                     downX=e.getRawX(); downY=e.getRawY();
-                    startX=bubbleParams.x; startY=bubbleParams.y; downTime=System.currentTimeMillis();
+                    startX=bubbleParams.x; startY=bubbleParams.y;
+                    downTime=System.currentTimeMillis(); moved=false;
                     return true;
                 }
                 if (e.getAction() == MotionEvent.ACTION_MOVE) {
-                    bubbleParams.x=startX+(int)(e.getRawX()-downX);
-                    bubbleParams.y=startY+(int)(e.getRawY()-downY);
+                    int dx=(int)(e.getRawX()-downX), dy=(int)(e.getRawY()-downY);
+                    if (Math.abs(dx)>dp(5) || Math.abs(dy)>dp(5)) moved=true;
+                    bubbleParams.x=startX+dx; bubbleParams.y=startY+dy;
                     wm.updateViewLayout(bubble,bubbleParams);
                     return true;
                 }
                 if (e.getAction() == MotionEvent.ACTION_UP) {
-                    if (System.currentTimeMillis()-downTime < 220 &&
-                        Math.abs(e.getRawX()-downX)<12 && Math.abs(e.getRawY()-downY)<12) togglePanel();
+                    if (!moved && System.currentTimeMillis()-downTime < 600) togglePanel();
                     return true;
                 }
-                return false;
+                return true;
             }
         });
         wm.addView(bubble, bubbleParams);
     }
 
-    private void togglePanel() {
-        if (panelOpen) {
-            closePanel();
-            return;
+    private void applyBubbleStyle() {
+        if (bubble != null) {
+            bubble.setBackground(shape(Color.rgb(35,18,58),
+                rgbEnabled ? Color.rgb(190,80,255) : Color.GRAY));
         }
+    }
+
+    private void togglePanel() {
+        if (panelOpen) { closePanel(); return; }
+        buildPanel();
+    }
+
+    private void buildPanel() {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(dp(14), dp(12), dp(14), dp(12));
-        box.setBackground(shape(Color.rgb(17, 17, 29), Color.rgb(160, 70, 255)));
+        box.setBackground(shape(Color.rgb(17,17,29),
+            rgbEnabled ? Color.rgb(160,70,255) : Color.GRAY));
 
         TextView heading = text("HYFLEZ  •  RGB", 18);
-        heading.setTextColor(Color.rgb(205, 130, 255));
-        box.addView(heading, new LinearLayout.LayoutParams(-1, dp(48)));
+        heading.setTextColor(Color.rgb(205,130,255));
+        box.addView(heading, new LinearLayout.LayoutParams(-1, dp(44)));
 
-        TextView subtitle = text("OVERLAY ATIVO", 11);
+        TextView subtitle = text("CONTROLES DO OVERLAY", 10);
         subtitle.setTextColor(Color.LTGRAY);
-        box.addView(subtitle, new LinearLayout.LayoutParams(-1, dp(28)));
+        box.addView(subtitle, new LinearLayout.LayoutParams(-1, dp(24)));
 
-        addAction(box, "Combat", "Área de treino / sem automação");
-        addAction(box, "Movement", "Atalhos visuais");
-        addAction(box, "Visual", "Efeitos do painel");
-        addAction(box, "Player", "Perfil local");
-        addAction(box, "Settings", "Fechar ou minimizar");
+        addToggle(box, "Efeito RGB", rgbEnabled, () -> {
+            rgbEnabled = !rgbEnabled;
+            applyBubbleStyle();
+            rebuildPanel();
+        });
+        addToggle(box, "Modo compacto", compact, () -> {
+            compact = !compact;
+            rebuildPanel();
+        });
+        addToggle(box, "HUD de treino", trainingEnabled, () -> {
+            trainingEnabled = !trainingEnabled;
+            updateTrainingHud();
+            rebuildPanel();
+        });
+
+        TextView info = text("O HUD é apenas visual e não altera o Minecraft.", 10);
+        info.setTextColor(Color.LTGRAY);
+        info.setPadding(dp(4), dp(8), dp(4), dp(8));
+        box.addView(info, new LinearLayout.LayoutParams(-1, compact ? dp(36) : dp(48)));
+
         TextView close = text("MINIMIZAR", 13);
-        close.setBackground(shape(Color.rgb(55, 25, 80), Color.rgb(210, 90, 255)));
+        close.setBackground(shape(Color.rgb(55,25,80), Color.rgb(210,90,255)));
         LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-1, dp(42));
-        cp.topMargin = dp(8);
+        cp.topMargin = dp(6);
         box.addView(close, cp);
         close.setOnClickListener(v -> closePanel());
 
@@ -149,17 +174,43 @@ public class OverlayService extends Service {
         panelOpen = true;
     }
 
-    private void addAction(LinearLayout parent, String title, String detail) {
-        LinearLayout item = new LinearLayout(this);
-        item.setOrientation(LinearLayout.VERTICAL);
-        item.setPadding(dp(8), dp(5), dp(8), dp(5));
-        TextView name = text(title, 15);
-        name.setTextColor(Color.WHITE);
-        TextView desc = text(detail, 10);
-        desc.setTextColor(Color.LTGRAY);
-        item.addView(name, new LinearLayout.LayoutParams(-1, dp(28)));
-        item.addView(desc, new LinearLayout.LayoutParams(-1, dp(24)));
-        parent.addView(item, new LinearLayout.LayoutParams(-1, dp(56)));
+    private void addToggle(LinearLayout parent, String label, boolean enabled, Runnable action) {
+        TextView row = text(label + "     " + (enabled ? "● ON" : "○ OFF"), 14);
+        row.setBackground(shape(Color.rgb(34,30,48),
+            enabled ? Color.rgb(150,75,220) : Color.rgb(75,75,90)));
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, dp(compact ? 42 : 50));
+        p.topMargin = dp(6);
+        parent.addView(row, p);
+        row.setOnClickListener(v -> action.run());
+    }
+
+    private void rebuildPanel() {
+        if (panel != null) {
+            try { wm.removeView(panel); } catch (Exception ignored) {}
+            panel = null;
+        }
+        panelOpen = false;
+        buildPanel();
+    }
+
+    private void updateTrainingHud() {
+        if (trainingEnabled) {
+            if (trainingHud == null) {
+                TextView hud = text("HYFLEZ  •  TREINO ATIVO", 12);
+                hud.setPadding(dp(12), dp(6), dp(12), dp(6));
+                hud.setBackground(shape(Color.rgb(20,20,32), Color.rgb(190,80,255)));
+                trainingHud = hud;
+                hudParams = new WindowManager.LayoutParams(-2, -2, windowType(),
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    PixelFormat.TRANSLUCENT);
+                hudParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+                hudParams.y = dp(40);
+                wm.addView(trainingHud, hudParams);
+            }
+        } else if (trainingHud != null) {
+            try { wm.removeView(trainingHud); } catch (Exception ignored) {}
+            trainingHud = null;
+        }
     }
 
     private void closePanel() {
@@ -176,6 +227,10 @@ public class OverlayService extends Service {
 
     @Override public void onDestroy() {
         closePanel();
+        if (trainingHud != null) {
+            try { wm.removeView(trainingHud); } catch (Exception ignored) {}
+            trainingHud = null;
+        }
         if (bubble != null) {
             try { wm.removeView(bubble); } catch (Exception ignored) {}
             bubble = null;
