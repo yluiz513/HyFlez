@@ -1,0 +1,26 @@
+name: Package HyFlez Bridge
+
+on:
+  push:
+    paths:
+      - "HyFlezBridge_BP/**"
+      - ".github/workflows/package-bridge.yml"
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Package add-on
+        run: |
+          cd HyFlezBridge_BP
+          zip -r ../HyFlezBridge.mcaddon .
+      - name: Upload Bridge
+        uses: actions/upload-artifact@v4
+        with:
+          name: HyFlezBridge-mcaddon
+          path: HyFlezBridge.mcaddon
+          if-no-files-found: error
+          retention-days: 90
