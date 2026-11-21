@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#09090d">
+  <meta name="description" content="HyFlez — Minecraft Bedrock Android companion UI prototype">
+  <title>HyFlez Client</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="stage">
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <section class="preview-note">
+      <span class="live-dot"></span>
+      <span>HYFLEZ <b>UI PREVIEW</b></span>
+      <small>BEDROCK / ANDROID</small>
+    </section>
+    <div class="phone-hint">
+      <div class="hint-icon">✦</div>
+      <h1>Seu jogo.<br><span>Seu estilo.</span></h1>
+      <p>Toque na esfera RGB para abrir o painel HyFlez.</p>
+    </div>
+    <button class="launcher" id="launcher" aria-label="Abrir menu HyFlez" aria-expanded="false">
+      <span class="launcher-core">H<span>F</span></span>
+    </button>
+    <div class="backdrop" id="backdrop"></div>
+    <aside class="panel" id="panel" aria-label="Painel HyFlez" aria-hidden="true">
+      <header class="panel-header">
+        <div class="brand-mark">H<span>F</span></div>
+        <div class="brand-copy">
+          <strong>HyFlez<span>CLIENT</span></strong>
+          <small>MINECRAFT BEDROCK</small>
+        </div>
+        <button class="icon-button close-button" id="closePanel" aria-label="Fechar painel">×</button>
+      </header>
+      <div class="panel-status">
+        <span><i class="status-dot"></i> Interface ativa</span>
+        <span class="version">v0.1.0 • PREVIEW</span>
+      </div>
+      <nav class="tabs" aria-label="Categorias">
+        <button class="tab active" data-tab="combat"><span>✧</span>Combat</button>
+        <button class="tab" data-tab="movement"><span>⌁</span>Movement</button>
+        <button class="tab" data-tab="visual"><span>◈</span>Visual</button>
+        <button class="tab" data-tab="player"><span>◎</span>Player</button>
+        <button class="tab" data-tab="settings"><span>⚙</span>Settings</button>
+      </nav>
+      <div class="panel-content">
+        <section class="tab-page active" id="page-combat">
+          <div class="section-heading"><div><small>CATEGORIA 01</small><h2>Combat</h2></div><span class="heading-symbol">✧</span></div>
+          <div class="notice-card"><span class="notice-icon">盾</span><div><strong>Fair play first</strong><p>Esta versão não inclui automação de combate ou vantagens injustas em servidores públicos.</p></div></div>
+          <div class="feature-card"><div class="feature-icon purple">⌖</div><div class="feature-copy"><strong>Training notes</strong><small>Atalhos e lembretes para treino em mundo privado.</small></div><span class="tag">SOON</span></div>
+          <div class="feature-card"><div class="feature-icon cyan">◉</div><div class="feature-copy"><strong>Combat HUD</strong><small>Espaço reservado para informações visuais legítimas.</small></div><span class="tag">SOON</span></div>
+        </section>
+        <section class="tab-page" id="page-movement">
+          <div class="section-heading"><div><small>CATEGORIA 02</small><h2>Movement</h2></div><span class="heading-symbol">⌁</span></div>
+          <div class="notice-card"><span class="notice-icon">↗</span><div><strong>Personalização visual</strong><p>Controles de interface não alteram velocidade, física ou movimento do jogador.</p></div></div>
+          <div class="feature-card"><div class="feature-icon cyan">⌗</div><div class="feature-copy"><strong>Movement HUD</strong><small>Organização de indicadores na tela.</small></div><span class="tag">SOON</span></div>
+        </section>
+        <section class="tab-page" id="page-visual">
+          <div class="section-heading"><div><small>CATEGORIA 03</small><h2>Visual</h2></div><span class="heading-symbol">◈</span></div>
+          <div class="setting-row"><div><strong>RGB effects</strong><small>Animação colorida da interface</small></div><label class="switch"><input type="checkbox" data-pref="rgb" checked><span></span></label></div>
+          <div class="setting-row"><div><strong>Glow effect</strong><small>Brilho neon nos componentes</small></div><label class="switch"><input type="checkbox" data-pref="glow" checked><span></span></label></div>
+          <div class="setting-row"><div><strong>Compact mode</strong><small>Reduz o espaçamento do painel</small></div><label class="switch"><input type="checkbox" data-pref="compact"><span></span></label></div>
+        </section>
+        <section class="tab-page" id="page-player">
+          <div class="section-heading"><div><small>CATEGORIA 04</small><h2>Player</h2></div><span class="heading-symbol">◎</span></div>
+          <div class="profile-card"><div class="avatar">HF</div><div><strong>Player profile</strong><small>Perfil local do HyFlez</small></div><span class="online-pill">LOCAL</span></div>
+          <div class="setting-row"><div><strong>Show welcome tip</strong><small>Exibe dicas nesta demonstração</small></div><label class="switch"><input type="checkbox" data-pref="tips" checked><span></span></label></div>
+        </section>
+        <section class="tab-page" id="page-settings">
+          <div class="section-heading"><div><small>CATEGORIA 05</small><h2>Settings</h2></div><span class="heading-symbol">⚙</span></div>
+          <div class="setting-row"><div><strong>Haptic feedback</strong><small>Resposta ao tocar nos controles</small></div><label class="switch"><input type="checkbox" data-pref="haptics"><span></span></label></div>
+          <div class="setting-row"><div><strong>Remember panel</strong><small>Salvar preferências neste navegador</small></div><label class="switch"><input type="checkbox" data-pref="remember" checked><span></span></label></div>
+          <button class="reset-button" id="resetPrefs">Restaurar configurações</button>
+          <p class="settings-foot">HyFlez UI Preview · Build 001</p>
+        </section>
+      </div>
+      <footer class="panel-footer"><span>POWERED BY <b>HYFLEZ</b></span><span class="rgb-line"></span><span>ANDROID</span></footer>
+    </aside>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
