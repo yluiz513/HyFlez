@@ -1,0 +1,46 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "HyFlez Bridge",
+    "description": "Integração oficial por add-on para mundos Bedrock compatíveis.",
+    "uuid": "7c49a4a1-92a4-4c0e-9f11-3d8b8bca6110",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      26,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "3f3a92c8-0f8c-4d31-9a1a-67a9e93a8a21",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "a2a6e90d-4c9f-4d82-a20a-58db2e5c1c72",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.5.0"
+    }
+  ]
+}
