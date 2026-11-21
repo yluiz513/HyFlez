@@ -139,9 +139,9 @@ public class OverlayService extends Service {
 
         LinearLayout tabs = new LinearLayout(this);
         tabs.setOrientation(LinearLayout.HORIZONTAL);
-        String[] names = {"Combat", "Move", "Visual", "Player", "Settings"};
+        String[] names = {"Combat", "HUD", "Visual", "World", "Utility", "Settings"};
         for (String name : names) {
-            String tabName = name.equals("Move") ? "Movement" : name;
+            String tabName = name;
             TextView tab = text(name, 10);
             tab.setBackground(shape(Color.rgb(38,32,52), currentTab.equals(tabName) ? accent() : Color.rgb(75,70,85)));
             LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(0, dp(38), 1);
@@ -179,8 +179,23 @@ public class OverlayService extends Service {
             TextView count = text("Toques registrados: " + clickCount, 12); count.setTextColor(Color.LTGRAY);
             content.addView(count, new LinearLayout.LayoutParams(-1, dp(34))); clickCountView = count;
             note(content, "Ferramentas de treino manual. Não atacam automaticamente nem alteram o jogo.");
-        } else if ("Movement".equals(currentTab)) {
-            section(content, "MOVEMENT • TREINO");
+        } else if ("HUD".equals(currentTab)) {
+            section(content, "HUD • INFORMAÇÕES LOCAIS");
+            addToggle(content, "HUD de treino", trainingEnabled, () -> { trainingEnabled=!trainingEnabled; updateTrainingHud(); rebuildPanel(); });
+            addToggle(content, "Status do painel", playerInfoEnabled, () -> { playerInfoEnabled=!playerInfoEnabled; rebuildPanel(); });
+            note(content, "O overlay não consegue ler FPS, coordenadas ou vida do Minecraft sem uma integração suportada pelo próprio jogo.");
+            if (playerInfoEnabled) note(content, "HyFlez ativo • Sessão local conectada");
+        } else if ("World".equals(currentTab)) {
+            section(content, "WORLD • BRIDGE");
+            note(content, "O HyFlez Bridge funciona somente em mundos onde o pacote de comportamento foi instalado e ativado.");
+            note(content, "Status atual: o APK não consegue confirmar sozinho se o Bridge está ativo dentro do mundo.");
+            addButton(content, "ABRIR MINECRAFT", "Iniciar o jogo", () -> {
+                Intent launch = getPackageManager().getLaunchIntentForPackage("com.mojang.minecraftpe");
+                if (launch != null) { launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(launch); }
+                else note(content, "Minecraft não encontrado neste aparelho.");
+            });
+        } else if ("Utility".equals(currentTab)) {
+            section(content, "UTILITY • FERRAMENTAS");
             addToggle(content, "Cronômetro de treino", movementTimerEnabled, () -> {
                 if (!movementTimerEnabled) { movementTimerEnabled=true; timerStartedAt=System.currentTimeMillis(); handler.post(timerRunnable); }
                 else { timerElapsed += System.currentTimeMillis()-timerStartedAt; movementTimerEnabled=false; handler.removeCallbacks(timerRunnable); }
@@ -200,14 +215,6 @@ public class OverlayService extends Service {
             addToggle(content, "Modo compacto", compact, () -> { compact=!compact; rebuildPanel(); });
             addToggle(content, "HUD de treino", trainingEnabled, () -> { trainingEnabled=!trainingEnabled; updateTrainingHud(); rebuildPanel(); });
             note(content, "Personaliza somente a aparência do overlay.");
-        } else if ("Player".equals(currentTab)) {
-            section(content, "PLAYER • PAINEL LOCAL");
-            addToggle(content, "Mostrar status do painel", playerInfoEnabled, () -> { playerInfoEnabled=!playerInfoEnabled; rebuildPanel(); });
-            if(playerInfoEnabled) {
-                note(content, "HyFlez ativo • Overlay conectado");
-                note(content, "Contador de treino: " + clickCount + " registros");
-                note(content, "Cronômetro: " + formatTime(timerElapsed + (movementTimerEnabled ? System.currentTimeMillis()-timerStartedAt : 0)));
-            } else note(content, "Ative o status para ver informações locais da sessão.");
         } else {
             section(content, "SETTINGS • CONFIGURAÇÕES");
             addToggle(content, "Efeito RGB", rgbEnabled, () -> {
@@ -239,7 +246,7 @@ public class OverlayService extends Service {
     }
 
     private void addButton(LinearLayout parent, String label, String detail, Runnable action) {
-        TextView row=text(label + "\\n" + detail,11);
+        TextView row=text(label + "\n" + detail,11);
         row.setBackground(shape(Color.rgb(43,30,58),accent()));
         LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(52)); p.topMargin=dp(5);
         parent.addView(row,p); row.setOnClickListener(v -> action.run());
