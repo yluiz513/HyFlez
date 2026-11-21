@@ -13,10 +13,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Package add-on
+      - name: Build behavior pack
         run: |
           cd HyFlezBridge_BP
-          zip -r ../HyFlezBridge.mcaddon .
+          zip -r ../HyFlezBridge.mcpack .
+      - name: Wrap pack as mcaddon
+        run: |
+          zip -j HyFlezBridge.mcaddon HyFlezBridge.mcpack
       - name: Upload Bridge
         uses: actions/upload-artifact@v4
         with:
